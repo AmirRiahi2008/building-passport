@@ -44,7 +44,7 @@ npm run check
 | `dist/assets/project-map.js` | کنترل Leaflet، OpenStreetMap، خطای اتصال و تغییر اندازه |
 | `src/styles.css` | Tailwind و سبک‌های اختصاصی |
 | `dist/assets/building.svg` | تصویر شماتیک معماری |
-| `dist/assets/logo.png` | تصویر اصلی لوگوی کارفرما |
+| `dist/assets/logo.png` | لوگوی شفاف با نوشته «شناسنامه ساختمان»؛ ویرایش‌شده با imagegen |
 | `scripts/build.mjs` | کامپایل Tailwind و قرار دادن وابستگی‌های محلی |
 | `scripts/check.mjs` | بررسی جریان‌های اصلی دمو در DOM |
 

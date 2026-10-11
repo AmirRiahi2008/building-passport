@@ -1,7 +1,7 @@
 /* Leaflet + OpenStreetMap: no API key, responsive sizing and connection recovery. */
 (() => {
   'use strict';
-  const CENTER = [35.80235, 51.39288];
+  const CENTER = [36.57884, 53.05448];
   // Leaflet treats its own emptyImageUrl as a cancelled request, so use a distinct transparent tile.
   const TRANSPARENT_TILE = 'data:image/svg+xml,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1"/>');
   const ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>';
@@ -115,14 +115,14 @@
 
       const icon = L.divIcon({
         className: 'map-marker', iconSize: [48, 60], iconAnchor: [24, 48], popupAnchor: [0, -43],
-        html: '<div class="pin-wrap"><div class="map-caption">دانشگاه شهید بهشتی</div><span class="pin-shadow"></span><span class="pin-shape"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M4 21V8l8-4 8 4v13M2 21h20M8 21v-4h8v4M8 9h.01M16 9h.01M8 13h.01M16 13h.01" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>',
+        html: '<div class="pin-wrap"><div class="map-caption">دانشگاه امام محمد باقر (ع)</div><span class="pin-shadow"></span><span class="pin-shape"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" aria-hidden="true"><path d="M4 21V8l8-4 8 4v13M2 21h20M8 21v-4h8v4M8 9h.01M16 9h.01M8 13h.01M16 13h.01" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>',
       });
-      const marker = L.marker(CENTER, { icon, keyboard: true, title: 'نمایش آدرس و مسیریابی دانشگاه شهید بهشتی' }).addTo(map);
+      const marker = L.marker(CENTER, { icon, keyboard: true, title: 'نمایش آدرس و مسیریابی دانشگاه امام محمد باقر (ع)' }).addTo(map);
       const popup = document.createElement('div');
       popup.className = 'project-map-popup'; popup.dir = 'rtl';
-      const title = document.createElement('strong'); title.textContent = 'دانشگاه شهید بهشتی تهران';
-      const address = document.createElement('p'); address.textContent = 'اوین، میدان شهید شهریاری، بلوار دانشجو';
-      const link = document.createElement('a'); link.href = 'https://www.google.com/maps/dir/?api=1&destination=35.80235,51.39288';
+      const title = document.createElement('strong'); title.textContent = 'دانشگاه امام محمد باقر (ع) ساری';
+      const address = document.createElement('p'); address.textContent = 'مازندران، ساری، بلوار خزر، خیابان شهید مطهری';
+      const link = document.createElement('a'); link.href = 'https://www.google.com/maps/dir/?api=1&destination=36.57884,53.05448';
       link.target = '_blank'; link.rel = 'noopener noreferrer'; link.textContent = 'مسیریابی تا موقعیت نمونه ←';
       popup.append(title, address, link);
       marker.bindPopup(popup, { minWidth: 200, maxWidth: 260, autoPanPadding: [28, 80] });

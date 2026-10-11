@@ -1,0 +1,235 @@
+<!doctype html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#f4f5f1">
+  <meta name="description" content="دموی شناسنامه ساختمان؛ مشخصات پروژه، عوامل طراحی و نظارت، موقعیت و گزارش‌های کنترل نظارت.">
+  <title>شناسنامه ساختمان | ساختمان بهشتی</title>
+  <link rel="icon" href="./assets/logo.png" type="image/png">
+  <link rel="preload" href="./assets/fonts/vazirmatn-arabic-400-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="./assets/fonts/vazirmatn-arabic-700-normal.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="./assets/vendor/leaflet.css">
+  <link rel="stylesheet" href="./assets/vendor/gesture.css">
+  <link rel="stylesheet" href="./assets/styles.css?v=osm-20261011">
+  <script defer src="./assets/vendor/leaflet.js"></script>
+  <script defer src="./assets/vendor/gesture.js"></script>
+  <script defer src="./assets/project-map.js?v=osm-20261011"></script>
+  <script defer src="./assets/vendor/motion.js"></script>
+  <script defer src="./assets/vendor/qrcode.js"></script>
+  <script defer src="./assets/vendor/lucide.js"></script>
+  <script defer src="./assets/vendor/focus.js"></script>
+  <script defer src="./assets/app.js?v=osm-20261011"></script>
+  <script defer src="./assets/vendor/alpine.js"></script>
+</head>
+<body x-data="buildingPortal" @keydown.escape.window="closeModal()">
+  <a class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:right-3 focus:z-[110] focus:bg-white focus:p-3 focus:rounded-xl" href="#building">رفتن به اطلاعات ساختمان</a>
+  <header class="site-header">
+    <div class="container-shell h-full flex items-center justify-between gap-3">
+      <a href="#building" class="brand" @click.prevent="goPublic('building')" aria-label="شناسنامه ساختمان، صفحه اصلی">
+        <div class="logo-frame"><img src="./assets/logo.png" alt="نشان مرکز تحقیقات راه، مسکن و شهرسازی" width="2048" height="2048"></div>
+        <div>
+          <p class="brand-title">شناسنامه ساختمان</p>
+          <p class="brand-caption">مرکز تحقیقات راه، مسکن و شهرسازی</p>
+        </div>
+      </a>
+      <nav class="top-links" aria-label="بخش‌های اطلاعات ساختمان" x-show="view === 'public'">
+        <a href="#building" @click.prevent="navigateTo('building')">مشخصات ساختمان</a>
+        <a href="#team" @click.prevent="navigateTo('team')">عوامل پروژه</a>
+        <a href="#location" @click.prevent="navigateTo('location')">موقعیت مکانی</a>
+      </nav>
+      <div class="flex items-center gap-2" x-show="view === 'public'">
+        <button type="button" class="icon-button header-qr" @click="openQr()" aria-label="نمایش کد QR ساختمان"><i data-lucide="qr-code" class="icon"></i></button>
+        <button type="button" class="button button-primary header-login" @click="enterControl()">
+          <i data-lucide="shield-check" class="icon icon-sm"></i>
+          <span x-text="phone ? 'پنل کنترل نظارت' : 'واحد کنترل نظارت'">واحد کنترل نظارت</span>
+        </button>
+      </div>
+      <div class="flex items-center gap-2" x-cloak x-show="view === 'control'">
+        <button type="button" class="button button-outline public-return" @click="goPublic('building')"><i data-lucide="arrow-right" class="icon icon-sm"></i><span>اطلاعات عمومی</span></button>
+        <button type="button" class="icon-button logout-button" @click="logout()" aria-label="خروج از پنل کارشناسی" title="خروج"><i data-lucide="log-out" class="icon icon-sm"></i></button>
+      </div>
+    </div>
+  </header>
+
+  <main id="public-page" x-show="view === 'public'">
+    <div class="container-shell">
+      <section class="hero" id="building" aria-labelledby="building-title">
+        <div class="breadcrumb"><span>شناسنامه دیجیتال</span><i data-lucide="chevron-left" class="icon w-3 h-3"></i><span>تهران</span><i data-lucide="chevron-left" class="icon w-3 h-3"></i><span class="text-[#668291]">پروژه بهشتی</span></div>
+        <div class="hero-inner">
+          <div class="hero-copy" data-intro>
+            <div class="flex items-center gap-4 justify-between sm:justify-start"><span class="eyebrow">BUILDING PASSPORT</span><span class="tag tag-green"><span class="status-dot"></span>در حال ساخت</span></div>
+            <h1 id="building-title">ساختمان بهشتی<span class="block text-[#7897a5] font-medium text-[20px] sm:text-[23px] tracking-[-.7px]">شفافیت، از پی تا بام.</span></h1>
+            <p class="hero-description">اطلاعات ساختمان، عوامل طراحی و نظارت و موقعیت پروژه؛ همه در یک شناسنامه، همیشه در دسترس.</p>
+            <p class="project-id"><span class="!text-[#8c9ca2] !tracking-normal" dir="rtl">شناسه پروژه</span><span>BS–1405–1184</span><span class="w-px h-3 bg-[#d7e1df] mx-2"></span><span class="!text-[#7d9299] !tracking-normal" dir="rtl">پروژه نمونه ۰۱</span></p>
+            <div class="hero-actions">
+              <a href="#team" class="button button-primary" @click.prevent="navigateTo('team')">مشاهده عوامل پروژه<i data-lucide="arrow-down-left" class="icon icon-sm"></i></a>
+              <a href="#location" class="button button-outline" @click.prevent="navigateTo('location')"><i data-lucide="map-pin" class="icon icon-sm"></i>موقعیت ساختمان</a>
+            </div>
+          </div>
+          <div class="hero-art" data-intro aria-label="تصویر شماتیک یک ساختمان شش طبقه">
+            <img class="building-image" src="./assets/building.svg" alt="تصویر معماری شماتیک ساختمان در حال ساخت، با شش طبقه و جرثقیل" width="600" height="525" fetchpriority="high">
+            <div class="art-label art-label-upper" data-float><span class="label-icon"><i data-lucide="layers-2" class="icon icon-sm"></i></span><div><strong class="block font-medium">۶ طبقه</strong><span class="block text-[8px] text-[#99aeb5] mt-0.5">۵ طبقه + همکف</span></div></div>
+            <div class="art-label art-label-lower" data-float><span class="w-1.5 h-1.5 rounded-full bg-[#7d9f8e]"></span><span>مرحله اجرای اسکلت</span></div>
+            <div class="art-scale"><span class="scale-rule"></span><span>SCHEMATIC / 01</span></div>
+          </div>
+        </div>
+        <div class="summary-strip" data-reveal aria-label="مشخصات اصلی ساختمان">
+          <div class="summary-item"><span class="metric-icon"><i data-lucide="building-2" class="icon"></i></span><div><p class="metric-label">تعداد طبقات</p><p class="metric-value">۶<small>طبقه</small></p><p class="summary-note">۵ طبقه + همکف</p></div></div>
+          <div class="summary-item"><span class="metric-icon"><i data-lucide="scan" class="icon"></i></span><div><p class="metric-label">سطح اشغال</p><p class="metric-value">۶۰<small>درصد</small></p><p class="summary-note">۴۸۰ مترمربع</p></div></div>
+          <div class="summary-item"><span class="metric-icon"><i data-lucide="ruler" class="icon"></i></span><div><p class="metric-label">مساحت زمین</p><p class="metric-value">۸۰۰<small>مترمربع</small></p><p class="summary-note">اطلاعات پروژه نمونه</p></div></div>
+          <div class="summary-item"><span class="metric-icon"><i data-lucide="users-round" class="icon"></i></span><div><p class="metric-label">عوامل پروژه</p><p class="metric-value">۱۶<small>نقش تخصصی</small></p><p class="summary-note">طراحی، نظارت و اجرا</p></div></div>
+        </div>
+      </section>
+
+      <section class="section-block" id="team" aria-labelledby="team-title" data-reveal>
+        <div class="section-heading">
+          <div class="section-title-wrap"><span class="section-number">01</span><div><h2 id="team-title">افراد پشت این ساختمان</h2><p class="section-description">عوامل طراحی، نظارت، اجرا و خدمات تخصصی پروژه</p></div></div>
+          <span class="hidden sm:inline-flex text-[10px] text-[#8b9fa6] items-center gap-2"><i data-lucide="hard-hat" class="icon icon-sm"></i>۱۶ نقش تخصصی</span>
+        </div>
+        <div class="people-toolbar">
+          <div class="segmented" role="group" aria-label="فیلتر عوامل پروژه">
+            <template x-for="group in teamGroups" :key="group.id"><button type="button" @click="teamGroup = group.id" :class="{'is-active':teamGroup === group.id}" :aria-pressed="teamGroup === group.id"><span x-text="group.label"></span><span class="segment-count" x-show="group.id === 'all'" x-text="fa(team.length)"></span></button></template>
+          </div>
+          <label class="search-field"><span class="sr-only">جستجوی نام یا تخصص عوامل پروژه</span><i data-lucide="search" class="icon"></i><input type="search" x-model="teamSearch" placeholder="جستجوی نام یا تخصص..." autocomplete="off"></label>
+        </div>
+        <div class="people-grid">
+          <template x-for="person in filteredTeam" :key="person.id">
+            <article class="person-card" :class="'group-' + person.group">
+              <div class="person-top"><span class="role-chip" x-text="person.role"></span><span class="avatar" aria-hidden="true" x-text="person.initials"></span></div>
+              <h3 class="person-name" x-text="person.name"></h3>
+              <div class="person-license"><span x-text="person.grade"></span><strong x-text="fa(person.license)"></strong></div>
+            </article>
+          </template>
+        </div>
+        <div class="empty-state" x-cloak x-show="filteredTeam.length === 0"><i data-lucide="search-x" class="icon"></i><h3>نتیجه‌ای پیدا نشد</h3><p>نام یا تخصص دیگری را جستجو کنید.</p><button class="button button-soft mt-4" type="button" @click="teamSearch = ''; teamGroup = 'all'">نمایش همه عوامل</button></div>
+      </section>
+
+      <section class="section-block" id="location" aria-labelledby="location-title" data-reveal>
+        <div class="section-heading"><div class="section-title-wrap"><span class="section-number">02</span><div><h2 id="location-title">موقعیت ساختمان</h2><p class="section-description">آدرس و دسترسی به محل پروژه</p></div></div><span class="tag tag-blue">موقعیت نمونه</span></div>
+        <div class="location-layout">
+          <div class="location-copy">
+            <span class="location-label"><i data-lucide="map-pin" class="icon icon-sm"></i>تهران، اوین</span>
+            <h3>دانشگاه شهید بهشتی</h3>
+            <p class="location-address">تهران، میدان شهید شهریاری، بلوار دانشجو، دانشگاه شهید بهشتی</p>
+            <p class="coordinate-tag"><i data-lucide="crosshair" class="icon w-3 h-3"></i><span>35.80235° N &nbsp; 51.39288° E</span></p>
+            <a class="button button-primary" href="https://www.google.com/maps/dir/?api=1&destination=35.80235,51.39288" target="_blank" rel="noopener noreferrer"><i data-lucide="navigation" class="icon icon-sm"></i>مسیریابی تا ساختمان<i data-lucide="arrow-up-left" class="icon w-3 h-3 mr-4"></i></a>
+          </div>
+          <div class="map-shell">
+            <div id="project-map" aria-label="نقشه تعاملی دانشگاه شهید بهشتی تهران" role="region" tabindex="0" dir="ltr"></div>
+            <div class="map-top-label" role="status" aria-live="polite"><span class="map-status-dot" :class="{'is-offline':mapHasError,'is-loading':mapConnection === 'loading'}"></span><span x-text="mapStatusLabel"></span></div>
+            <div class="map-actions"><button type="button" @click="openMap()" aria-label="نمایش بزرگ نقشه" title="نمای بزرگ"><i data-lucide="maximize-2" class="icon icon-sm"></i></button><button type="button" @click="recenterMap()" aria-label="بازگشت نقشه به موقعیت ساختمان" title="موقعیت ساختمان"><i data-lucide="locate-fixed" class="icon icon-sm"></i></button></div>
+            <p class="map-touch-hint"><i data-lucide="hand" class="icon w-3 h-3"></i>با دو انگشت نقشه را جابه‌جا کنید</p>
+            <div class="map-offline-note" x-show="mapHasError" x-cloak><span x-text="mapErrorMessage"></span><button type="button" @click="retryMap()">تلاش مجدد</button></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="inspection-callout" data-reveal aria-labelledby="inspection-title">
+        <div class="flex items-center gap-4"><span class="callout-icon"><i data-lucide="shield-check" class="icon icon-lg"></i></span><div><h2 id="inspection-title">ورود واحد کنترل نظارت</h2><p>مشاهده گزارش‌های ناظرین و مجری، نتایج آزمایشگاه و نامه‌های پروژه</p></div></div>
+        <button class="button button-primary shrink-0 relative z-10" type="button" @click="enterControl()">ورود کارشناسان<i data-lucide="arrow-left" class="icon icon-sm"></i></button>
+      </section>
+      <footer class="site-footer"><p class="flex items-center gap-1.5"><i data-lucide="info" class="icon w-3 h-3"></i>نسخه نمایشی؛ ساختمان، اسامی و مدارک این صفحه داده‌های نمونه هستند.</p><span class="footer-code">BUILDING PASSPORT / BS–1184</span></footer>
+    </div>
+  </main>
+
+  <main class="dashboard container-shell" x-cloak x-show="view === 'control'" id="control-page" aria-labelledby="control-title">
+    <div class="breadcrumb dashboard-breadcrumb"><button type="button" @click="goPublic('building')">شناسنامه ساختمان</button><i data-lucide="chevron-left" class="icon w-3 h-3"></i><span>ساختمان بهشتی</span><i data-lucide="chevron-left" class="icon w-3 h-3"></i><span class="text-[#658291]">کنترل نظارت</span></div>
+    <div class="dashboard-intro"><div><span class="eyebrow">PROJECT INSPECTION</span><h1 id="control-title">واحد کنترل نظارت</h1><p class="section-description mt-1">گزارش‌ها و مدارک ساختمان، در یک نگاه.</p></div><div class="inspector-chip"><i data-lucide="user-round-check" class="icon"></i><div><span class="block" dir="ltr" x-text="fa(phone)"></span><small>ورود آزمایشی کارشناس</small></div></div></div>
+    <div class="dashboard-layout">
+      <aside class="project-aside" aria-label="خلاصه مشخصات ساختمان">
+        <div class="aside-art"><img src="./assets/building.svg" alt="" width="600" height="525"></div>
+        <div class="aside-details">
+          <div class="aside-title"><div class="flex justify-between items-center gap-2"><h2>ساختمان بهشتی</h2><span class="tag tag-green"><span class="status-dot"></span>در حال ساخت</span></div><p class="text-[9px] text-[#9aa9ae] tracking-[1px]" dir="ltr">BS–1405–1184</p></div>
+          <p class="aside-address">تهران، اوین، دانشگاه شهید بهشتی<br>مرحله اجرای اسکلت</p>
+          <dl class="aside-metrics"><div><dt>تعداد طبقات</dt><dd>۶<small> طبقه</small></dd></div><div><dt>سطح اشغال</dt><dd>۶۰<small> ٪</small></dd></div></dl>
+          <button type="button" class="button button-outline w-full mt-5 aside-public-button" @click="goPublic('team')">مشاهده اطلاعات و عوامل<i data-lucide="arrow-up-left" class="icon icon-sm"></i></button>
+        </div>
+      </aside>
+      <section class="min-w-0" aria-label="مدارک واحد کنترل نظارت">
+        <div class="dash-tabbar">
+          <div class="dash-tabs" role="tablist" aria-label="مدارک پروژه" @keydown.arrow-left.prevent="cycleControlTab(1)" @keydown.arrow-right.prevent="cycleControlTab(-1)" @keydown.home.prevent="focusControlTab('reports')" @keydown.end.prevent="focusControlTab('letters')">
+            <button id="reports-tab" type="button" role="tab" :aria-selected="controlTab === 'reports'" :tabindex="controlTab === 'reports' ? 0 : -1" aria-controls="reports-panel" @click="setControlTab('reports')" :class="{'is-active':controlTab === 'reports'}"><i data-lucide="clipboard-list" class="icon icon-sm"></i><span>گزارش‌ها</span><span class="dash-tab-count" x-text="fa(reports.length)"></span></button>
+            <button id="labs-tab" type="button" role="tab" :aria-selected="controlTab === 'labs'" :tabindex="controlTab === 'labs' ? 0 : -1" aria-controls="labs-panel" @click="setControlTab('labs')" :class="{'is-active':controlTab === 'labs'}"><i data-lucide="flask-conical" class="icon icon-sm"></i><span>آزمایشگاه</span><span class="dash-tab-count">۲</span></button>
+            <button id="letters-tab" type="button" role="tab" :aria-selected="controlTab === 'letters'" :tabindex="controlTab === 'letters' ? 0 : -1" aria-controls="letters-panel" @click="setControlTab('letters')" :class="{'is-active':controlTab === 'letters'}"><i data-lucide="mails" class="icon icon-sm"></i><span>نامه‌ها</span><span class="dash-tab-count">۳</span></button>
+          </div>
+          <button type="button" class="button button-primary shrink-0" @click="openReportForm()"><i data-lucide="plus" class="icon icon-sm"></i><span x-text="hasDraft ? 'ادامه پیش‌نویس' : 'ثبت گزارش جدید'"></span></button>
+        </div>
+        <div id="reports-panel" role="tabpanel" aria-labelledby="reports-tab" x-show="controlTab === 'reports'">
+          <h2 class="sr-only">گزارش‌های ناظرین و مجری</h2>
+          <div class="records-toolbar"><label class="search-field"><span class="sr-only">جستجوی گزارش‌ها</span><i data-lucide="search" class="icon"></i><input type="search" placeholder="جستجو در گزارش‌ها..." x-model="reportSearch" autocomplete="off"></label><label><span class="sr-only">نوع گزارش</span><select class="record-filter" x-model="reportFilter"><option value="all">همه گزارش‌ها</option><option value="supervisor">گزارش ناظرین</option><option value="executor">گزارش مجری</option><option value="mine">گزارش‌های من</option></select></label></div>
+          <template x-for="report in filteredReports" :key="report.id"><button type="button" class="report-card" @click="openDocument(report, 'report')" :aria-label="'مشاهده ' + report.title"><div class="flex items-start sm:items-center gap-3 min-w-0"><span class="record-icon" :class="{'executor':report.kind === 'executor'}"><i data-lucide="file-text" class="icon"></i></span><div class="min-w-0"><h3 class="record-title" x-text="report.title"></h3><div class="record-meta"><span x-text="report.role"></span><span class="meta-separator"></span><span x-text="dateFa(report.date)"></span><span class="mine-tag" x-show="report.ownerPhone === phone">گزارش من</span></div></div></div><div class="record-end"><span class="record-status" :class="statusClass(report.status)" x-text="report.status"></span><i data-lucide="chevron-left" class="icon"></i></div></button></template>
+          <div class="empty-state" x-show="filteredReports.length === 0"><i data-lucide="clipboard-list" class="icon"></i><h3 x-text="reportFilter === 'mine' ? 'هنوز گزارشی ثبت نکرده‌اید' : 'گزارشی پیدا نشد'"></h3><p x-text="reportFilter === 'mine' ? 'اولین گزارش بازدید خود را ثبت کنید.' : 'عنوان یا فیلتر دیگری را امتحان کنید.'"></p><button type="button" class="button button-soft mt-4" @click="reportFilter === 'mine' ? openReportForm() : clearReportFilters()" x-text="reportFilter === 'mine' ? 'ثبت اولین گزارش' : 'نمایش همه گزارش‌ها'"></button></div>
+          <p class="demo-note"><i data-lucide="info" class="icon w-3 h-3"></i>گزارش‌های جدید فقط در همین مرورگر ذخیره می‌شوند.</p>
+        </div>
+        <div id="labs-panel" role="tabpanel" aria-labelledby="labs-tab" x-show="controlTab === 'labs'">
+          <h2 class="sr-only">نتایج آزمایشگاه بتن و مکانیک خاک</h2>
+          <p class="section-description !mt-0 mb-5">نتایج ثبت‌شده آزمایشگاه‌های بتن و مکانیک خاک پروژه</p>
+          <div class="lab-grid"><template x-for="lab in labs" :key="lab.id"><article class="lab-card"><div class="lab-head"><span class="metric-icon"><i data-lucide="flask-conical" class="icon"></i></span><span class="tag tag-green">نتیجه ثبت‌شده</span></div><h3 x-text="lab.title"></h3><p class="lab-company" x-text="lab.author"></p><div class="lab-reading"><span x-text="lab.metricLabel"></span><strong><span x-text="lab.metricValue"></span> <small x-text="lab.metricUnit"></small></strong></div><div class="lab-date"><span>تاریخ گزارش</span><span x-text="dateFa(lab.date)"></span></div><button type="button" class="button button-outline w-full" @click="openDocument(lab, 'lab')">مشاهده نتیجه کامل<i data-lucide="arrow-up-left" class="icon icon-sm"></i></button></article></template></div>
+          <p class="demo-note"><i data-lucide="info" class="icon w-3 h-3"></i>نتایج و مقادیر آزمایشگاهی صرفاً داده‌های نمایشی هستند.</p>
+        </div>
+        <div id="letters-panel" role="tabpanel" aria-labelledby="letters-tab" x-show="controlTab === 'letters'">
+          <h2 class="sr-only">نامه‌های پروژه</h2><p class="section-description !mt-0 mb-5">مکاتبات مرتبط با ساختمان بهشتی</p>
+          <template x-for="letter in letters" :key="letter.id"><button type="button" class="report-card" @click="openDocument(letter, 'letter')" :aria-label="'مشاهده ' + letter.title"><div class="flex items-start sm:items-center gap-3 min-w-0"><span class="record-icon letter"><i data-lucide="mail-open" class="icon"></i></span><div class="min-w-0"><h3 class="record-title" x-text="letter.title"></h3><div class="record-meta"><span x-text="letter.author"></span><span class="meta-separator"></span><span x-text="dateFa(letter.date)"></span></div></div></div><div class="record-end"><span class="record-status status-new" x-text="letter.number"></span><i data-lucide="chevron-left" class="icon"></i></div></button></template>
+        </div>
+      </section>
+    </div>
+    <footer class="site-footer dashboard-footer"><p class="flex items-center gap-1.5"><i data-lucide="info" class="icon w-3 h-3"></i>پنل نمایشی؛ ورود با شماره موبایل بدون کد تأیید انجام می‌شود.</p><span class="footer-code">PROJECT INSPECTION / BS–1184</span></footer>
+  </main>
+
+  <nav class="mobile-dock" aria-label="دسترسی سریع موبایل" x-show="view === 'public'">
+    <a href="#building" @click.prevent="navigateTo('building')" :class="{'is-current':activeSection === 'building'}"><i data-lucide="building-2" class="icon"></i><span>ساختمان</span></a>
+    <a href="#team" @click.prevent="navigateTo('team')" :class="{'is-current':activeSection === 'team'}"><i data-lucide="users-round" class="icon"></i><span>عوامل پروژه</span></a>
+    <a href="#location" @click.prevent="navigateTo('location')" :class="{'is-current':activeSection === 'location'}"><i data-lucide="map-pin" class="icon"></i><span>موقعیت</span></a>
+    <button type="button" class="dock-inspection" @click="enterControl()"><i data-lucide="shield-check" class="icon"></i><span>کنترل نظارت</span></button>
+  </nav>
+
+  <div class="modal-backdrop" x-show="modal === 'login'" x-cloak x-transition:enter="transition ease-out duration-200" x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100" x-transition:leave="transition ease-in duration-150" x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0" @click.self="closeModal()">
+    <section class="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="login-title" x-trap.inert.noscroll="modal === 'login'">
+      <div class="sheet-handle"></div><button type="button" class="modal-close" @click="closeModal()" aria-label="بستن فرم ورود"><i data-lucide="x" class="icon icon-sm"></i></button>
+      <div class="modal-emblem"><i data-lucide="shield-check" class="icon icon-lg"></i></div><span class="eyebrow !text-[8px]">INSPECTOR ACCESS</span>
+      <h2 class="modal-heading mt-2" id="login-title">ورود واحد کنترل نظارت</h2><p class="modal-description">برای دسترسی به گزارش‌ها و مدارک ساختمان، شماره موبایل خود را وارد کنید.</p>
+      <form @submit.prevent="login()" novalidate><label class="field-label" for="phone-input">شماره موبایل</label><input id="phone-input" class="form-input phone-field" type="tel" inputmode="tel" autocomplete="tel" placeholder="0912 345 6789" maxlength="18" x-model="phoneInput" @input="phoneError = ''" :aria-invalid="!!phoneError" aria-describedby="phone-error phone-help" x-ref="phoneInput"><p id="phone-error" class="field-error" x-show="phoneError" x-text="phoneError" role="alert"></p><p class="field-hint" id="phone-help">شماره‌های فارسی و انگلیسی پذیرفته می‌شوند.</p><button class="button button-primary w-full mt-6 !min-h-[49px]" type="submit">ورود به پنل کارشناسی<i data-lucide="arrow-left" class="icon icon-sm"></i></button></form>
+      <div class="login-note"><i data-lucide="info" class="icon icon-sm"></i><p>این یک نسخه نمایشی است. هر شماره موبایل معتبر، بدون کد تأیید می‌تواند وارد شود.</p></div>
+    </section>
+  </div>
+
+  <div class="modal-backdrop" x-cloak x-show="modal === 'qr'" x-transition.opacity @click.self="closeModal()">
+    <section class="modal-sheet" role="dialog" aria-modal="true" aria-labelledby="qr-title" x-trap.inert.noscroll="modal === 'qr'"><div class="sheet-handle"></div><button class="modal-close" type="button" @click="closeModal()" aria-label="بستن کد QR"><i data-lucide="x" class="icon icon-sm"></i></button><div class="modal-emblem"><i data-lucide="qr-code" class="icon icon-lg"></i></div><h2 id="qr-title" class="modal-heading">یک اسکن تا شناسنامه</h2><p class="modal-description">این کد QR را اسکن کنید تا اطلاعات همین ساختمان روی موبایل نمایش داده شود.</p><div class="qr-frame"><img :src="qrImage" alt="کد QR لینک شناسنامه ساختمان بهشتی" width="180" height="180"></div><p class="qr-link" x-text="publicUrl"></p><button type="button" class="button button-primary w-full" @click="copyProjectLink()"><i data-lucide="copy" class="icon icon-sm"></i>کپی لینک ساختمان</button></section>
+  </div>
+
+  <div class="modal-backdrop" x-cloak x-show="modal === 'report'" x-transition.opacity @click.self="closeModal()">
+    <section class="modal-sheet modal-wide" role="dialog" aria-modal="true" aria-labelledby="report-form-title" x-trap.inert.noscroll="modal === 'report'">
+      <div class="sheet-handle"></div><button class="modal-close" type="button" @click="closeModal()" aria-label="بستن فرم گزارش"><i data-lucide="x" class="icon icon-sm"></i></button><div class="modal-emblem"><i data-lucide="clipboard-pen-line" class="icon icon-lg"></i></div><h2 class="modal-heading" id="report-form-title">گزارش بازدید جدید</h2><p class="modal-description">ساختمان بهشتی <span class="mx-2 text-[#cad4d1]">/</span> شناسه BS–1405–1184</p>
+      <form @submit.prevent="submitReport()" @input.debounce.350ms="saveDraft()" @change="saveDraft()" novalidate>
+        <div class="form-section-title"><span>۰۱</span><span>مشخصات گزارش</span></div>
+        <label class="field-label" for="report-title">عنوان گزارش <span class="text-[#8d9fa5]">*</span></label><input id="report-title" class="form-input" x-model="draft.title" placeholder="مثلاً: بازدید از اجرای اسکلت طبقه سوم" maxlength="100" :aria-invalid="!!formErrors.title" aria-describedby="report-title-error" x-ref="reportTitle"><p class="field-error" id="report-title-error" x-show="formErrors.title" x-text="formErrors.title" role="alert"></p>
+        <div class="form-grid"><div><label class="field-label" for="report-role">سمت ثبت‌کننده <span class="text-[#8d9fa5]">*</span></label><select id="report-role" class="form-input" x-model="draft.role" :aria-invalid="!!formErrors.role" aria-describedby="report-role-error"><option value="">انتخاب سمت</option><template x-for="role in reportRoles" :key="role"><option :value="role" x-text="role"></option></template></select><p class="field-error" id="report-role-error" x-show="formErrors.role" x-text="formErrors.role" role="alert"></p></div><div><label class="field-label" for="report-stage">مرحله پروژه <span class="text-[#8d9fa5]">*</span></label><select id="report-stage" class="form-input" x-model="draft.stage"><option>اجرای اسکلت</option><option>فونداسیون</option><option>سفت‌کاری</option><option>تأسیسات</option><option>نازک‌کاری</option><option>پایان کار</option></select></div></div>
+        <div class="form-section-title"><span>۰۲</span><span>مشاهدات بازدید</span></div>
+        <label class="field-label" for="report-body">شرح گزارش <span class="text-[#8d9fa5]">*</span></label><textarea id="report-body" class="form-input resize-y min-h-[133px] leading-[2]" x-model="draft.body" rows="5" placeholder="مشاهدات، موارد بررسی‌شده و اقدامات موردنیاز را بنویسید..." maxlength="4000" :aria-invalid="!!formErrors.body" aria-describedby="report-body-error"></textarea><div class="flex justify-between items-start gap-4"><p class="field-error" id="report-body-error" x-show="formErrors.body" x-text="formErrors.body" role="alert"></p><span class="field-hint mr-auto" x-text="fa(draft.body.length) + ' / ۴۰۰۰'"></span></div>
+        <fieldset><legend class="field-label">نتیجه بازدید</legend><div class="outcome-options"><label class="outcome-choice" :class="{'is-selected':draft.outcome === 'مطابق ضوابط'}"><input type="radio" name="outcome" value="مطابق ضوابط" x-model="draft.outcome"><span>مطابق ضوابط</span></label><label class="outcome-choice needs-attention" :class="{'is-selected':draft.outcome === 'نیاز به پیگیری'}"><input type="radio" name="outcome" value="نیاز به پیگیری" x-model="draft.outcome"><span>نیاز به پیگیری</span></label></div></fieldset>
+        <p class="field-error" x-show="formErrors.storage" x-text="formErrors.storage" role="alert"></p>
+        <div class="form-footer"><span class="draft-label"><i data-lucide="save" class="icon w-3 h-3"></i><span x-text="draftState || 'پیش‌نویس به‌صورت خودکار ذخیره می‌شود'"></span></span><button type="submit" class="button button-primary" :disabled="submitting"><i data-lucide="check" class="icon icon-sm"></i><span x-text="submitting ? 'در حال ثبت...' : 'ثبت گزارش بازدید'"></span></button></div>
+        <button type="button" class="block mx-auto mt-3 min-h-[44px] px-4 text-[10px] text-[#7f949a]" @click="closeModal()">بستن و ادامه بعداً</button>
+      </form>
+    </section>
+  </div>
+
+  <div class="modal-backdrop" x-cloak x-show="modal === 'document'" x-transition.opacity @click.self="closeModal()">
+    <section class="modal-sheet modal-wide" role="dialog" aria-modal="true" aria-labelledby="document-title" x-trap.inert.noscroll="modal === 'document'"><div class="sheet-handle"></div><button type="button" class="modal-close" @click="closeModal()" aria-label="بستن جزئیات مدرک"><i data-lucide="x" class="icon icon-sm"></i></button><div class="modal-emblem"><i data-lucide="file-text" class="icon icon-lg"></i></div><span class="eyebrow !text-[8px]" x-text="documentKind === 'report' ? 'INSPECTION REPORT' : documentKind === 'lab' ? 'LABORATORY RESULT' : 'PROJECT LETTER'"></span><h2 class="modal-heading !text-[20px] mt-2" id="document-title" x-text="selectedDocument?.title"></h2><p class="detail-subtitle">ساختمان بهشتی <span class="mx-2 text-[#cad4d1]">/</span><span x-text="selectedDocument?.number || selectedDocument?.code"></span></p>
+      <dl class="document-facts"><div><dt x-text="documentKind === 'report' ? 'سمت ثبت‌کننده' : 'صادرکننده'"></dt><dd x-text="selectedDocument?.role || selectedDocument?.author"></dd></div><div><dt>تاریخ ثبت</dt><dd x-text="dateFa(selectedDocument?.date)"></dd></div><div><dt x-text="documentKind === 'report' ? 'مرحله پروژه' : documentKind === 'lab' ? 'نوع آزمایش' : 'گیرنده'"></dt><dd x-text="selectedDocument?.stage || selectedDocument?.testType || selectedDocument?.recipient"></dd></div><div><dt x-text="documentKind === 'report' ? 'نتیجه بازدید' : documentKind === 'lab' ? 'وضعیت نتیجه' : 'موضوع'"></dt><dd x-text="selectedDocument?.outcome || selectedDocument?.result || selectedDocument?.subject"></dd></div></dl>
+      <h3 class="document-heading" x-text="documentKind === 'report' ? 'شرح گزارش' : documentKind === 'lab' ? 'نتایج آزمایش' : 'متن نامه'"></h3><div class="document-body" x-text="selectedDocument?.body"></div><p class="document-sample" x-show="!selectedDocument?.ownerPhone">این مدرک نمونه است و اعتبار اجرایی ندارد.</p><p class="document-sample" x-show="selectedDocument?.ownerPhone">این گزارش در نسخه نمایشی و در همین مرورگر ثبت شده است.</p><div class="document-footer"><button type="button" class="button button-outline" @click="closeModal()">بستن جزئیات</button><button type="button" class="button button-primary" @click="downloadDocument()"><i data-lucide="download" class="icon icon-sm"></i>دریافت نسخه متنی</button></div>
+    </section>
+  </div>
+
+  <div class="map-modal-backdrop" x-cloak x-show="modal === 'map'" @click.self="closeModal()">
+    <section class="map-modal-sheet" role="dialog" aria-modal="true" aria-labelledby="expanded-map-title" x-trap.inert.noscroll="modal === 'map'">
+      <header class="map-modal-header"><span class="metric-icon"><i data-lucide="map-pin" class="icon"></i></span><div><h2 id="expanded-map-title">دانشگاه شهید بهشتی</h2><p>موقعیت نمونه ساختمان بهشتی</p></div><button type="button" class="map-close-button" @click="closeModal()" aria-label="بستن نمای بزرگ نقشه"><i data-lucide="x" class="icon"></i></button></header>
+      <div class="map-expanded-canvas"><div id="expanded-project-map" role="region" aria-label="نمای بزرگ نقشه دانشگاه شهید بهشتی" dir="ltr"></div><div class="map-top-label" role="status" aria-live="polite"><span class="map-status-dot" :class="{'is-offline':mapHasError,'is-loading':mapConnection === 'loading'}"></span><span x-text="mapStatusLabel"></span></div><div class="map-actions"><button type="button" @click="recenterMap()" aria-label="بازگشت به دانشگاه شهید بهشتی"><i data-lucide="locate-fixed" class="icon"></i></button></div></div>
+      <footer class="map-modal-footer"><div><strong>تهران، اوین، میدان شهید شهریاری</strong><p x-text="mapHasError ? mapErrorMessage : 'برای جابه‌جایی، نقشه را بکشید'"></p></div><div class="flex items-center gap-2"><button type="button" class="button button-outline" x-show="modal === 'map' && mapHasError" @click="retryMap()">تلاش مجدد</button><a href="https://www.google.com/maps/dir/?api=1&destination=35.80235,51.39288" class="button button-primary" target="_blank" rel="noopener noreferrer"><i data-lucide="navigation" class="icon icon-sm"></i>مسیریابی</a></div></footer>
+    </section>
+  </div>
+  <div class="toast" x-cloak x-show="toastMessage" x-transition.opacity role="status" aria-live="polite"><i data-lucide="circle-check" class="icon"></i><span x-text="toastMessage"></span><button type="button" @click="toastMessage = ''" aria-label="بستن پیام"><i data-lucide="x" class="icon icon-sm"></i></button></div>
+  <noscript><p class="fixed bottom-0 inset-x-0 bg-[#194b60] text-white p-4 text-center z-[120]">برای نمایش عوامل پروژه و استفاده از فرم‌ها، JavaScript مرورگر را فعال کنید.</p></noscript>
+</body>
+</html>

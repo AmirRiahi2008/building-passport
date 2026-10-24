@@ -11,7 +11,7 @@
   <link rel="preload" href="./assets/fonts/vazirmatn-arabic-700-normal.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="./assets/vendor/leaflet.css">
   <link rel="stylesheet" href="./assets/vendor/gesture.css">
-  <link rel="stylesheet" href="./assets/styles.css?v=citizen-20261024">
+  <link rel="stylesheet" href="./assets/styles.css?v=engineers-20261024">
   <script defer src="./assets/vendor/leaflet.js"></script>
   <script defer src="./assets/vendor/gesture.js"></script>
   <script defer src="./assets/project-map.js?v=sari-20261011"></script>
@@ -20,7 +20,7 @@
   <script defer src="./assets/vendor/lucide.js"></script>
   <script defer src="./assets/vendor/focus.js"></script>
   <script defer src="./assets/citizen-reports.js?v=citizen-20261024"></script>
-  <script defer src="./assets/app.js?v=citizen-20261024"></script>
+  <script defer src="./assets/app.js?v=engineers-20261024"></script>
   <script defer src="./assets/vendor/alpine.js"></script>
 </head>
 <body x-data="buildingPortal" @keydown.escape.window="closeTop()">
@@ -168,14 +168,34 @@
           <button type="button" class="button button-outline w-full mt-5 aside-public-button" @click="goPublic('team')">مشاهده اطلاعات و عوامل<i data-lucide="arrow-up-left" class="icon icon-sm"></i></button>
         </div>
       </aside>
-      <section class="min-w-0" aria-label="مدارک واحد کنترل نظارت">
+      <section class="min-w-0" aria-label="مهندسان و مدارک واحد کنترل نظارت">
         <div class="dash-tabbar">
-          <div class="dash-tabs" role="tablist" aria-label="مدارک پروژه" @keydown.arrow-left.prevent="cycleControlTab(1)" @keydown.arrow-right.prevent="cycleControlTab(-1)" @keydown.home.prevent="focusControlTab('reports')" @keydown.end.prevent="focusControlTab('letters')">
+          <div class="dash-tabs" role="tablist" aria-label="بخش‌های کنترل نظارت" @keydown.arrow-left.prevent="cycleControlTab(1)" @keydown.arrow-right.prevent="cycleControlTab(-1)" @keydown.home.prevent="focusControlTab('engineers')" @keydown.end.prevent="focusControlTab('letters')">
+            <button id="engineers-tab" type="button" role="tab" :aria-selected="controlTab === 'engineers'" :tabindex="controlTab === 'engineers' ? 0 : -1" aria-controls="engineers-panel" @click="setControlTab('engineers')" :class="{'is-active':controlTab === 'engineers'}"><i data-lucide="users-round" class="icon icon-sm"></i><span>مهندسان</span><span class="dash-tab-count" x-text="fa(controlEngineers.length)"></span></button>
             <button id="reports-tab" type="button" role="tab" :aria-selected="controlTab === 'reports'" :tabindex="controlTab === 'reports' ? 0 : -1" aria-controls="reports-panel" @click="setControlTab('reports')" :class="{'is-active':controlTab === 'reports'}"><i data-lucide="clipboard-list" class="icon icon-sm"></i><span>گزارش‌ها</span><span class="dash-tab-count" x-text="fa(reports.length)"></span></button>
             <button id="labs-tab" type="button" role="tab" :aria-selected="controlTab === 'labs'" :tabindex="controlTab === 'labs' ? 0 : -1" aria-controls="labs-panel" @click="setControlTab('labs')" :class="{'is-active':controlTab === 'labs'}"><i data-lucide="flask-conical" class="icon icon-sm"></i><span>آزمایشگاه</span><span class="dash-tab-count">۲</span></button>
             <button id="letters-tab" type="button" role="tab" :aria-selected="controlTab === 'letters'" :tabindex="controlTab === 'letters' ? 0 : -1" aria-controls="letters-panel" @click="setControlTab('letters')" :class="{'is-active':controlTab === 'letters'}"><i data-lucide="mails" class="icon icon-sm"></i><span>نامه‌ها</span><span class="dash-tab-count">۳</span></button>
           </div>
           <button type="button" class="button button-primary shrink-0" @click="openReportForm()"><i data-lucide="plus" class="icon icon-sm"></i><span x-text="hasDraft ? 'ادامه پیش‌نویس' : 'ثبت گزارش جدید'"></span></button>
+        </div>
+        <div id="engineers-panel" role="tabpanel" aria-labelledby="engineers-tab" x-show="controlTab === 'engineers'">
+          <template x-if="view === 'control' && phone && controlTab === 'engineers'">
+            <div>
+              <div class="engineers-toolbar"><div><h2>مهندسان پروژه</h2><p class="section-description">اطلاعات و شماره تماس مهندسان ساختمان محمد باقر</p></div><label class="search-field"><span class="sr-only">جستجوی مهندسان داخل پنل</span><i data-lucide="search" class="icon"></i><input type="search" x-model="engineerSearch" placeholder="جستجوی نام یا تخصص..." autocomplete="off"></label></div>
+              <p class="engineer-contact-note"><i data-lucide="info" class="icon icon-sm"></i><span>برای تست، شماره‌ای که با آن وارد شده‌اید به‌عنوان شماره تماس همه مهندسان نمایش داده می‌شود.</span></p>
+              <div class="engineers-grid">
+                <template x-for="person in filteredControlEngineers" :key="person.id">
+                  <article class="person-card engineer-card" :class="'group-' + person.group" :data-engineer-id="person.id">
+                    <div class="person-top"><span class="role-chip" x-text="person.role"></span><span class="avatar" aria-hidden="true" x-text="person.initials"></span></div>
+                    <h3 class="person-name" x-text="person.name"></h3>
+                    <div class="person-license"><span x-text="person.grade"></span><strong x-text="fa(person.license)"></strong></div>
+                    <div class="engineer-contact"><span>شماره تماس تستی</span><a class="engineer-phone" :href="'tel:' + phone" :aria-label="'تماس با ' + person.name + '، شماره تستی ' + fa(phone)"><span dir="ltr" x-text="fa(phone)"></span><i data-lucide="phone" class="icon icon-sm"></i></a></div>
+                  </article>
+                </template>
+              </div>
+              <div class="empty-state" x-show="filteredControlEngineers.length === 0"><i data-lucide="search-x" class="icon"></i><h3>مهندسی پیدا نشد</h3><p>نام یا تخصص دیگری را جستجو کنید.</p><button type="button" class="button button-soft mt-4" @click="engineerSearch = ''">نمایش همه مهندسان</button></div>
+            </div>
+          </template>
         </div>
         <div id="reports-panel" role="tabpanel" aria-labelledby="reports-tab" x-show="controlTab === 'reports'">
           <h2 class="sr-only">گزارش‌های ناظرین و مجری</h2>

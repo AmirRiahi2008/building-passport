@@ -93,6 +93,7 @@ assert.equal(ctx.state.team.filter(p=>p.group==='execution').length,2);
 assert.equal(ctx.state.team.filter(p=>p.group==='specialists').length,5);
 assert.equal(new Set(ctx.state.team.map(p=>p.role)).size,16);
 assert.equal(ctx.d.querySelector('#control-page').style.display,'none');
+assert.equal(ctx.d.querySelectorAll('.engineer-card').length,0);assert.equal(ctx.d.querySelectorAll('a[href^="tel:"]').length,0);
 assert.equal(ctx.d.documentElement.lang,'fa'); assert.equal(ctx.d.documentElement.dir,'rtl');
 assert.equal(typeof ctx.w.Motion.animate,'function');assert.equal(typeof ctx.w.Motion.inView,'function');
 pass('Public project contains all 16 requested roles; inspection panel starts hidden.');
@@ -116,8 +117,26 @@ assert.equal(ctx.d.querySelector('#phone-input').getAttribute('aria-invalid'),'t
 input(ctx,'#phone-input','۰۹۱۲۳۴۵۶۷۸۹'); submit(ctx,'#phone-input'); await tick();
 assert.equal(ctx.state.phone,'09123456789'); assert.equal(ctx.state.view,'control'); assert.equal(ctx.state.modal,'');
 assert.equal(JSON.parse(ctx.w.localStorage.getItem(prefix+'session')),'09123456789');
-assert.equal(ctx.d.querySelector('#reports-panel').style.display,'');
+assert.equal(ctx.state.controlTab,'engineers');assert.equal(ctx.d.querySelector('#engineers-panel').style.display,'');
 pass('Invalid phone stays in login; any valid Persian-digit mobile enters the demo.');
+
+const engineerIds=['D1','D2','D3','D4','S1','S2','S3','S4','S5','E2','X3','X4','X5'];
+assert.deepEqual(Array.from(ctx.d.querySelectorAll('.engineer-card'),card=>card.dataset.engineerId),engineerIds);
+for(const card of ctx.d.querySelectorAll('.engineer-card')) {
+  assert.match(card.querySelector('.person-name').textContent,/^مهندس /);
+  assert.equal(card.querySelector('.engineer-phone').getAttribute('href'),'tel:09123456789');
+  assert.equal(card.querySelector('.engineer-phone>span').textContent,'۰۹۱۲۳۴۵۶۷۸۹');
+}
+assert.equal(ctx.d.querySelectorAll('#public-page a[href^="tel:"]').length,0);
+assert.ok(!ctx.d.querySelector('#public-page').textContent.includes('۰۹۱۲۳۴۵۶۷۸۹'));
+input(ctx,'#engineers-panel input','كاظمي');await tick();assert.equal(ctx.d.querySelectorAll('.engineer-card').length,1);assert.match(ctx.d.querySelector('.engineer-card .person-name').textContent,/کاظمی/);
+assert.equal(ctx.d.querySelectorAll('#team .person-card').length,16);
+input(ctx,'#engineers-panel input','نامی که وجود ندارد');await tick();assert.equal(ctx.d.querySelectorAll('.engineer-card').length,0);
+click(ctx,'#engineers-panel .empty-state button');await tick();assert.equal(ctx.d.querySelectorAll('.engineer-card').length,13);assert.equal(ctx.d.querySelectorAll('.engineer-phone svg').length,13);
+ctx.state.goPublic('team');await tick();assert.equal(ctx.state.phone,'09123456789');assert.equal(ctx.d.querySelectorAll('.engineer-card').length,0);assert.equal(ctx.d.querySelectorAll('a[href^="tel:"]').length,0);
+assert.ok(!ctx.d.querySelector('#public-page').textContent.includes('۰۹۱۲۳۴۵۶۷۸۹'));
+ctx.state.enterControl();await tick();assert.equal(ctx.state.controlTab,'engineers');assert.equal(ctx.d.querySelectorAll('.engineer-card').length,13);
+pass('All 13 engineers repeat the signed-in test phone only inside the panel; search is independent and contacts unmount on the public page.');
 
 click(ctx,'#labs-tab'); await tick();
 assert.equal(ctx.d.querySelector('#labs-tab').getAttribute('aria-selected'),'true');
@@ -140,6 +159,10 @@ assert.equal(ctx.state.controlTab,'labs'); assert.equal(ctx.d.activeElement.id,'
 assert.equal(ctx.d.querySelector('#reports-tab').tabIndex,-1);
 ctx.d.querySelector('#labs-tab').dispatchEvent(new ctx.w.KeyboardEvent('keydown',{ key:'End',bubbles:true })); await tick();
 assert.equal(ctx.state.controlTab,'letters');
+ctx.d.querySelector('#letters-tab').dispatchEvent(new ctx.w.KeyboardEvent('keydown',{ key:'Home',bubbles:true }));await tick();
+assert.equal(ctx.state.controlTab,'engineers');assert.equal(ctx.d.activeElement.id,'engineers-tab');
+ctx.d.querySelector('#engineers-tab').dispatchEvent(new ctx.w.KeyboardEvent('keydown',{ key:'ArrowLeft',bubbles:true }));await tick();
+assert.equal(ctx.state.controlTab,'reports');assert.equal(ctx.d.activeElement.id,'reports-tab');
 pass('Inspection tabs support RTL arrow keys, Home/End and managed focus.');
 
 click(ctx,'.dash-tabbar > button'); await tick();
@@ -173,16 +196,27 @@ pass('Report persists, appears under My reports and renders user-entered markup 
 
 const refreshed=await boot(snapshot(ctx));
 assert.equal(refreshed.state.phone,'09123456789'); assert.equal(refreshed.state.reports.length,5);
+assert.equal(refreshed.state.view,'public');assert.equal(refreshed.d.querySelectorAll('a[href^="tel:"]').length,0);
 refreshed.state.enterControl(); await tick(); assert.equal(refreshed.state.view,'control');
+assert.equal(refreshed.d.querySelectorAll('.engineer-card').length,13);
+assert.ok(Array.from(refreshed.d.querySelectorAll('.engineer-phone')).every(link=>link.getAttribute('href')==='tel:09123456789'));
 refreshed.state.logout(); await tick(); assert.equal(refreshed.state.phone,'');assert.equal(refreshed.state.view,'public');
+assert.equal(refreshed.d.querySelectorAll('a[href^="tel:"]').length,0);
 assert.equal(refreshed.d.querySelector('#control-page').style.display,'none');
 assert.equal(refreshed.state.reports.length,5);
 refreshed.state.enterControl();await tick();input(refreshed,'#phone-input','+98 912 345 6780');submit(refreshed,'#phone-input');await tick();
 assert.equal(refreshed.state.phone,'09123456780');assert.equal(refreshed.state.hasDraft,false);
+assert.equal(refreshed.d.querySelectorAll('.engineer-card').length,13);
+for(const link of refreshed.d.querySelectorAll('.engineer-phone')) {
+  assert.equal(link.getAttribute('href'),'tel:09123456780');assert.equal(link.querySelector('span').textContent,'۰۹۱۲۳۴۵۶۷۸۰');
+}
+assert.ok(!refreshed.d.querySelector('#public-page').textContent.includes('۰۹۱۲۳۴۵۶۷۸۰'));
+click(refreshed,'#reports-tab');await tick();
 input(refreshed,'.record-filter','mine','change');await tick();assert.equal(refreshed.state.filteredReports.length,0);
 pass('Refresh restores records; logout retains reports; another mobile has separate personal records.');
 
 ctx.state.closeModal();ctx.state.goPublic();await tick();click(ctx,'.header-qr');await tick();
+assert.equal(ctx.d.querySelectorAll('a[href^="tel:"]').length,0);
 assert.match(ctx.state.qrImage,/^data:image\/gif;base64,/);
 assert.equal(ctx.state.publicUrl,'https://building-passport.amirreza-riahi3311.chatgpt.site/');
 assert.ok(ctx.d.querySelector('.leaflet-marker-icon'));assert.match(ctx.d.querySelector('.leaflet-marker-icon').textContent,/امام محمد باقر/);

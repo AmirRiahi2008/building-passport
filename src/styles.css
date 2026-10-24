@@ -361,3 +361,20 @@ input:focus,textarea:focus,select:focus{border-color:#70a9bf;outline:0;box-shado
 }
 @media(max-width:370px){.mobile-dock{padding-inline:10px;}}
 @media print{.citizen-photo-lightbox{display:none!important;}}
+
+.engineers-toolbar{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:17px;}
+.engineers-toolbar h2{font-size:17px;font-weight:700;line-height:1.8;}.engineers-toolbar .search-field{width:240px;flex-shrink:0;}
+.engineer-contact-note{display:flex;align-items:flex-start;gap:9px;border:1px solid #dbe7e6;border-radius:11px;background:#edf4f3;color:#66878a;padding:13px 15px;margin-bottom:19px;font-size:10px;line-height:2;}
+.engineer-contact-note>.icon{margin-top:2px;}
+.engineers-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:13px;}
+.engineer-card{min-width:0;padding:20px;}.engineer-card .person-name{line-height:1.9;overflow-wrap:anywhere;}
+.engineer-contact{margin-top:17px;padding-top:14px;border-top:1px solid #e5ece7;}
+.engineer-contact>span{display:block;font-size:10px;color:#83999b;margin-bottom:6px;}
+.engineer-phone{display:flex;align-items:center;justify-content:space-between;gap:9px;min-height:44px;border:1px solid #dce7e6;border-radius:9px;background:#f1f6f4;padding:8px 11px;color:#285e70;transition:background .2s,border-color .2s;}
+.engineer-phone>span{font-size:15px;font-weight:600;letter-spacing:.6px;}.engineer-phone>.icon{color:#648d92;}
+.engineer-phone:hover{background:#e6f0ed;border-color:#b0c9c8;}
+@media(max-width:1150px){.engineers-grid{grid-template-columns:repeat(2,minmax(0,1fr));}.engineers-toolbar{flex-wrap:wrap;}.engineers-toolbar .search-field{width:100%;}}
+@media(min-width:601px) and (max-width:850px){.engineers-grid{grid-template-columns:repeat(3,minmax(0,1fr));}.engineers-toolbar .search-field{width:250px;}}
+@media(max-width:600px){.engineers-toolbar{gap:12px;}.engineers-toolbar h2{font-size:15px;}.engineer-contact-note{font-size:10px;padding:12px;margin-bottom:15px;}.engineers-grid{gap:11px;}.engineer-card{padding:16px 13px;}.engineer-phone{padding:8px 9px;}.engineer-phone>span{font-size:14px;letter-spacing:0;}.engineer-contact{margin-top:14px;padding-top:12px;}.engineer-contact>span{font-size:9px;}#control-page .dash-tabs button{gap:5px;padding-inline:8px;}#control-page .dash-tabs button>.icon{display:none;}}
+@media(max-width:400px){.engineers-grid{grid-template-columns:1fr;}.engineer-card{padding:20px;}.engineer-card .person-name{font-size:14px;}.engineer-phone>span{font-size:16px;}}
+@media(max-width:370px){#control-page .dash-tabs .dash-tab-count{display:none;}#control-page .dash-tabs button{font-size:9px;padding-inline:7px;}}

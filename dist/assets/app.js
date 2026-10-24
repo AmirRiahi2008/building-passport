@@ -110,7 +110,7 @@
     ...window.buildingCitizenReports(PREFIX),
     view: 'public', modal: '', activeSection: 'building', team, labs, letters,
     teamGroups: [{ id:'all',label:'همه عوامل' },{ id:'design',label:'طراحی' },{ id:'supervision',label:'نظارت' },{ id:'execution',label:'اجرا' },{ id:'specialists',label:'خدمات تخصصی' }],
-    teamGroup: 'all', teamSearch: '', controlTab: 'reports', reportFilter: 'all', reportSearch: '',
+    teamGroup: 'all', teamSearch: '', engineerSearch: '', controlTab: 'engineers', reportFilter: 'all', reportSearch: '',
     phone: '', phoneInput: '', phoneError: '', reports: [...seedReports], reportRoles: ROLE_NAMES,
     draft: blankDraft(), formErrors: {}, draftState: '', hasDraft: false, submitting: false,
     toastMessage: '', selectedDocument: null, documentKind: '', qrImage: '', mapConnection: 'loading',
@@ -123,6 +123,7 @@
       this.initCitizenReports();
       this.$watch('teamGroup', () => this.$nextTick(() => animateCards()));
       this.$watch('teamSearch', () => this.$nextTick(() => animateCards()));
+      this.$watch('engineerSearch', () => this.$nextTick(hydrateIcons));
       this.$watch('reportFilter', () => this.$nextTick(hydrateIcons));
       this.$watch('reportSearch', () => this.$nextTick(hydrateIcons));
       this.$watch('reports', () => this.$nextTick(hydrateIcons));
@@ -143,6 +144,8 @@
     dateFa(value) { if (!value || Number.isNaN(Date.parse(value))) return '—'; return new Date(value).toLocaleDateString('fa-IR', { day:'numeric', month:'long', year:'numeric', timeZone:'Asia/Tehran' }); },
     normalize(value) { return String(value).replace(/ي/g,'ی').replace(/ك/g,'ک').replace(/\u200c/g,' ').toLowerCase().trim(); },
     get filteredTeam() { const q = this.normalize(this.teamSearch); return this.team.filter(p => (this.teamGroup === 'all' || p.group === this.teamGroup) && this.normalize(p.role + ' ' + p.name).includes(q)); },
+    get controlEngineers() { return this.team.filter(person => person.name.startsWith('مهندس ')); },
+    get filteredControlEngineers() { const q = this.normalize(this.engineerSearch); return this.controlEngineers.filter(person => this.normalize(person.role + ' ' + person.name).includes(q)); },
     get filteredReports() { const q = this.normalize(this.reportSearch); return this.reports.filter(r => (this.reportFilter === 'all' || this.reportFilter === r.kind || (this.reportFilter === 'mine' && r.ownerPhone === this.phone)) && this.normalize(r.title + ' ' + r.role + ' ' + (r.author || '')).includes(q)); },
     statusClass(status) { return status === 'بررسی شده' ? 'status-reviewed' : status === 'نیاز به پیگیری' ? 'status-attention' : 'status-new'; },
     clearReportFilters() { this.reportFilter = 'all'; this.reportSearch = ''; },
@@ -152,7 +155,7 @@
     navigateTo(id) { this.activeSection = id; document.getElementById(id)?.scrollIntoView({ behavior: reducedMotion() ? 'auto' : 'smooth', block: 'start' }); },
     goPublic(id = 'building') { this.closeModal(); this.view = 'public'; this.$nextTick(() => { mapInstance?.refresh(); this.navigateTo(id); }); },
     enterControl() { if (this.phone) this.showControl(); else { this.phoneInput = ''; this.phoneError = ''; this.modal = 'login'; this.$nextTick(() => setTimeout(() => this.$refs.phoneInput?.focus(),60)); } },
-    showControl() { this.view = 'control'; this.modal = ''; this.$nextTick(() => { window.scrollTo({ top:0, behavior:'auto' }); hydrateIcons(); }); },
+    showControl() { this.view = 'control'; this.modal = ''; this.controlTab = 'engineers'; this.engineerSearch = ''; this.$nextTick(() => { window.scrollTo({ top:0, behavior:'auto' }); hydrateIcons(); }); },
     login() {
       const phone = normalizePhone(this.phoneInput);
       if (!phone) { this.phoneError = 'شماره موبایل معتبر ۱۱ رقمی وارد کنید؛ مانند ۰۹۱۲۳۴۵۶۷۸۹.'; this.$refs.phoneInput?.focus(); return; }
@@ -163,7 +166,7 @@
     logout() { if (this.modal === 'report') this.saveDraft(); try { localStorage.removeItem(PREFIX + 'session'); } catch {} this.phone = ''; this.draft = blankDraft(); this.hasDraft = false; this.goPublic(); this.notify('از پنل کارشناسی خارج شدید.'); },
     setControlTab(tab) { this.controlTab = tab; this.$nextTick(hydrateIcons); },
     focusControlTab(tab) { this.setControlTab(tab); this.$nextTick(() => document.getElementById(tab + '-tab')?.focus()); },
-    cycleControlTab(direction) { const tabs = ['reports','labs','letters']; this.focusControlTab(tabs[(tabs.indexOf(this.controlTab) + direction + tabs.length) % tabs.length]); },
+    cycleControlTab(direction) { const tabs = ['engineers','reports','labs','letters']; this.focusControlTab(tabs[(tabs.indexOf(this.controlTab) + direction + tabs.length) % tabs.length]); },
     closeModal() { if (this.submitting || this.citizenSubmitting) return; this.closeCitizenState(); if (this.modal === 'report') { clearTimeout(draftTimer); this.saveDraft(); } if (this.modal === 'map') { expandedMap?.destroy(); expandedMap = null; this.mapConnection = mapInstance?.status || 'unavailable'; } this.modal = ''; },
     closeTop() { if (this.citizenPhotoPreview) this.citizenPhotoPreview = null; else this.closeModal(); },
 

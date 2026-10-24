@@ -5,14 +5,16 @@ import { JSDOM, VirtualConsole } from 'jsdom';
 
 const html = await readFile('dist/index.html','utf8');
 const script = await readFile('dist/assets/app.js','utf8');
+const citizenScript = await readFile('dist/assets/citizen-reports.js','utf8');
 const mapScript = await readFile('dist/assets/project-map.js','utf8');
 const vendor = await Promise.all(['lucide.js','qrcode.js','focus.js','alpine.js','leaflet.js','motion.js','gesture.js'].map(name => readFile('dist/assets/vendor/' + name,'utf8')));
 const prefix = 'building-passport:BS-1184:';
+const allContexts = [];
 let checks = 0;
 const pass = label => { checks++; console.log('PASS ' + label); };
 const tick = () => new Promise(resolve => setTimeout(resolve,100));
 
-async function boot(stored = {}, blocked = false, { mobile = false, offline = false } = {}) {
+async function boot(stored = {}, blocked = false, { mobile = false, offline = false, photoDelay = 0, photoFails = false } = {}) {
   const errors = [];
   const vc = new VirtualConsole();
   vc.on('jsdomError', e => { if (!String(e).includes('navigation')) errors.push(e.message); });
@@ -43,15 +45,23 @@ async function boot(stored = {}, blocked = false, { mobile = false, offline = fa
   w.HTMLAnchorElement.prototype.click = function() { this.dataset.clicked = 'true'; };
   w.URL.createObjectURL = blob => { w.lastDownloadBlob = blob; return 'blob:test'; };
   w.URL.revokeObjectURL = () => {};
+  w.Image = class {
+    get naturalWidth() { return w.testPhotoWidth || 2000; }
+    get naturalHeight() { return 1000; }
+    set src(value) { w.setTimeout(() => photoFails ? this.onerror?.() : this.onload?.(),photoDelay); }
+  };
+  w.HTMLCanvasElement.prototype.getContext = function() { return {fillRect(){},drawImage:()=>{w.lastPhotoDimensions=[this.width,this.height];}}; };
+  w.HTMLCanvasElement.prototype.toDataURL = function() { return w.photoDataURL || 'data:image/jpeg;base64,/9j/2Q=='; };
   w.addEventListener('error', e => { errors.push(e.error?.message || e.message); e.preventDefault(); });
   for (const [key,value] of Object.entries(stored)) w.localStorage.setItem(key,value);
   if (blocked) Object.defineProperty(w,'localStorage',{ get(){ throw new Error('Storage unavailable'); } });
   w.eval(vendor[5]); w.eval(vendor[4]); w.eval(vendor[6]);
   const mapFactory = w.L.map;
   w.L.map = (...args) => { const map=mapFactory(...args);maps.push(map);return map; };
-  w.eval(vendor[0]); w.eval(vendor[1]); w.eval(vendor[2]); w.eval(mapScript); w.eval(script); w.eval(vendor[3]);
+  w.eval(vendor[0]); w.eval(vendor[1]); w.eval(vendor[2]); w.eval(mapScript); w.eval(citizenScript); w.eval(script); w.eval(vendor[3]);
   await tick();
   const d = w.document;
+  allContexts.push({dom,errors});
   return { dom,w,d,state:w.Alpine.$data(d.body),errors,maps,
     resizeMap(id,width,height) { sizes.set(id,{width,height});for(const observer of observers)if(observer.el.id===id)observer.callback([{target:observer.el}]); },
   };
@@ -284,7 +294,92 @@ assert.ok(blocked.state.formErrors.storage);assert.equal(blocked.state.reports.l
 assert.match(blocked.state.draft.body,/باقی بماند/);
 pass('Corrupt storage recovers; unavailable storage preserves unsaved text and prevents false success.');
 
-for (const instance of [ctx,refreshed,corrupt,blocked,mobileMap,fallback,offlineMap]) {
+const publicReports=await boot();
+assert.equal(publicReports.state.phone,'');assert.equal(publicReports.state.citizenReports.length,0);
+assert.equal(publicReports.d.querySelectorAll('.mobile-dock > *').length,5);
+click(publicReports,'.top-links a[href="#citizen"]');await tick();assert.equal(publicReports.state.activeSection,'citizen');
+click(publicReports,'.citizen-open');await tick();assert.equal(publicReports.state.modal,'citizen');
+assert.equal(publicReports.state.citizenDraft.type,'violation');
+submit(publicReports,'#citizen-form');await tick();assert.ok(publicReports.state.citizenErrors.title);assert.ok(publicReports.state.citizenErrors.body);assert.equal(publicReports.state.citizenReceipt,null);
+const citizenBody='مشاهده مردم درباره ساختمان <img src=x onerror=alert(1)> باید فقط به‌صورت متن ثبت شود.';
+input(publicReports,'#citizen-title','گزارش وضعیت کارگاه');input(publicReports,'#citizen-body',citizenBody);
+async function uploadPhotos(context,files) {
+  const field=context.d.querySelector('#citizen-photos');
+  Object.defineProperty(field,'files',{value:files,configurable:true});
+  field.dispatchEvent(new context.w.Event('change',{bubbles:true}));await tick();
+}
+const photo=(context,name='site.png',type='image/png')=>new context.w.File(['test photo'],name,{type});
+await uploadPhotos(publicReports,[photo(publicReports)]);
+assert.equal(publicReports.state.citizenDraft.images.length,1);
+assert.deepEqual(publicReports.w.lastPhotoDimensions,[1280,640]);
+click(publicReports,'.citizen-photo-thumb > button');await tick();assert.ok(publicReports.state.citizenPhotoPreview);
+publicReports.w.dispatchEvent(new publicReports.w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));await tick();
+assert.equal(publicReports.state.citizenPhotoPreview,null);assert.equal(publicReports.state.modal,'citizen');
+publicReports.w.dispatchEvent(new publicReports.w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));await tick();
+assert.equal(publicReports.state.modal,'');
+assert.equal(JSON.parse(publicReports.w.localStorage.getItem(prefix+'citizen-draft')).images.length,1);
+click(publicReports,'.citizen-open');await tick();assert.equal(publicReports.state.citizenDraft.body,citizenBody);assert.equal(publicReports.state.citizenDraft.images.length,1);
+submit(publicReports,'#citizen-form');await tick();
+assert.ok(publicReports.state.citizenReceipt.code.startsWith('PUB–'));assert.equal(publicReports.state.citizenReports.length,1);
+assert.equal(publicReports.state.reports.length,4);assert.equal(publicReports.w.localStorage.getItem(prefix+'reports'),null);
+assert.equal(publicReports.w.localStorage.getItem(prefix+'citizen-draft'),null);assert.equal(publicReports.state.phone,'');
+assert.equal(publicReports.d.querySelector('#citizen-form').style.display,'none');
+publicReports.state.closeModal();await tick();click(publicReports,'.citizen-record');await tick();
+assert.equal(publicReports.state.modal,'citizen-record');assert.equal(publicReports.d.querySelector('.citizen-record-body').textContent,citizenBody);
+assert.equal(publicReports.d.querySelector('.citizen-record-body img'),null);assert.equal(publicReports.d.querySelectorAll('.citizen-document-photos img').length,1);
+click(publicReports,'.citizen-document-photos button');await tick();assert.ok(publicReports.state.citizenPhotoPreview);
+publicReports.w.dispatchEvent(new publicReports.w.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));await tick();assert.equal(publicReports.state.modal,'citizen-record');assert.equal(publicReports.state.citizenPhotoPreview,null);
+publicReports.state.closeModal();
+pass('Anonymous violation reports validate, resize photos, preserve drafts, show safe text and previews, and never enter inspector records.');
+
+publicReports.state.openCitizenForm();await tick();
+const praise=publicReports.d.querySelector('input[name="citizen-type"][value="praise"]');praise.checked=true;praise.dispatchEvent(new publicReports.w.Event('change',{bubbles:true}));
+input(publicReports,'#citizen-title','تشکر از نظم کارگاه');input(publicReports,'#citizen-body','محوطه و مسیر عبور مردم در این ساختمان مرتب و تمیز نگهداری شده است.');
+publicReports.state.closeModal();publicReports.state.openCitizenForm();await tick();assert.equal(publicReports.state.citizenDraft.type,'praise');
+submit(publicReports,'#citizen-form');await tick();assert.equal(publicReports.state.citizenReports.length,2);
+assert.ok(publicReports.state.citizenReports.some(report=>report.type==='praise' && report.images.length===0));
+const publicReload=await boot(snapshot(publicReports));assert.equal(publicReload.state.citizenReports.length,2);assert.equal(publicReload.state.phone,'');assert.equal(publicReload.state.reports.length,4);
+assert.equal(publicReload.state.citizenReports.find(report=>report.type==='violation').images.length,1);
+const isolated=await boot({'agri-passport:AG-1405-001:citizen-reports':publicReports.w.localStorage.getItem(prefix+'citizen-reports')});
+assert.equal(isolated.state.citizenReports.length,0);
+isolated.w.localStorage.setItem(prefix+'citizen-reports',publicReports.w.localStorage.getItem(prefix+'citizen-reports'));
+isolated.w.dispatchEvent(new isolated.w.StorageEvent('storage',{key:prefix+'citizen-reports'}));await tick();assert.equal(isolated.state.citizenReports.length,2);assert.equal(isolated.state.reports.length,4);
+isolated.w.localStorage.setItem(prefix+'reports',ctx.w.localStorage.getItem(prefix+'reports'));
+isolated.w.dispatchEvent(new isolated.w.StorageEvent('storage',{key:prefix+'reports'}));await tick();assert.equal(isolated.state.reports.length,5);assert.equal(isolated.state.citizenReports.length,2);
+pass('Praise reports need no photo or login; public history survives reload and syncs separately from inspector and agricultural records.');
+
+const images=await boot();images.state.openCitizenForm();await tick();
+await uploadPhotos(images,[photo(images,'unsafe.svg','image/svg+xml')]);assert.match(images.state.citizenPhotoError,/فقط عکس/);assert.equal(images.state.citizenDraft.images.length,0);
+await uploadPhotos(images,Array.from({length:4},(_,index)=>photo(images,'photo-'+index+'.jpg','image/jpeg')));assert.match(images.state.citizenPhotoError,/حداکثر ۳/);assert.equal(images.state.citizenDraft.images.length,0);
+const large=photo(images);Object.defineProperty(large,'size',{value:8*1024*1024+1});
+await uploadPhotos(images,[large]);assert.match(images.state.citizenPhotoError,/۸ مگابایت/);
+await uploadPhotos(images,[photo(images)]);assert.equal(images.state.citizenDraft.images.length,1);
+click(images,'.citizen-photo-remove');await tick();assert.equal(images.state.citizenDraft.images.length,0);
+images.w.photoDataURL='data:image/jpeg;base64,'+'A'.repeat(350001);await uploadPhotos(images,[photo(images)]);assert.match(images.state.citizenPhotoError,/حجم این عکس/);assert.equal(images.state.citizenDraft.images.length,0);
+delete images.w.photoDataURL;images.w.testPhotoWidth=50000;await uploadPhotos(images,[photo(images)]);assert.match(images.state.citizenPhotoError,/ابعاد عکس/);assert.equal(images.state.citizenDraft.images.length,0);
+const decode=await boot({},false,{photoFails:true});decode.state.openCitizenForm();await tick();await uploadPhotos(decode,[photo(decode)]);assert.match(decode.state.citizenPhotoError,/قابل خواندن نیست/);
+const cancelled=await boot({},false,{photoDelay:200});cancelled.state.openCitizenForm();await tick();
+const field=cancelled.d.querySelector('#citizen-photos');Object.defineProperty(field,'files',{value:[photo(cancelled)],configurable:true});
+const pending=cancelled.state.uploadCitizenPhotos({target:field});assert.equal(cancelled.state.citizenUploadBusy,true);
+cancelled.state.submitCitizenReport();assert.equal(cancelled.state.citizenReceipt,null);
+cancelled.state.closeModal();cancelled.state.openCitizenForm();await pending;await tick();assert.equal(cancelled.state.citizenDraft.images.length,0);assert.equal(cancelled.state.citizenUploadBusy,false);
+pass('Public photos enforce type/count/size limits, reject decode/oversize errors, support removal and cannot leak from cancelled uploads.');
+
+const unavailable=await boot({},true);unavailable.state.openCitizenForm();await tick();
+input(unavailable,'#citizen-title','متن گزارش حفظ شود');input(unavailable,'#citizen-body','در صورت خطای ذخیره‌سازی این متن و عکس باید در فرم باقی بمانند.');
+await uploadPhotos(unavailable,[photo(unavailable)]);submit(unavailable,'#citizen-form');await tick();
+assert.ok(unavailable.state.citizenErrors.storage);assert.equal(unavailable.state.citizenReceipt,null);assert.equal(unavailable.state.modal,'citizen');assert.equal(unavailable.state.citizenDraft.images.length,1);
+assert.equal(unavailable.state.citizenReports.length,0);assert.match(unavailable.state.citizenDraft.body,/باقی بمانند/);
+unavailable.state.closeModal();unavailable.state.openCitizenForm();await tick();assert.equal(unavailable.state.citizenDraft.title,'متن گزارش حفظ شود');
+const quota=await boot(snapshot(publicReports));
+const setItem=quota.w.Storage.prototype.setItem;quota.w.Storage.prototype.setItem=function(key,value){if(key===prefix+'citizen-reports')throw new quota.w.DOMException('Full','QuotaExceededError');return setItem.call(this,key,value);};
+quota.state.openCitizenForm();await tick();input(quota,'#citizen-title','فضای مرورگر پر است');input(quota,'#citizen-body','هنگام پر شدن فضا، گزارش‌های قبلی و متن جدید باید حفظ شوند.');submit(quota,'#citizen-form');await tick();
+assert.ok(quota.state.citizenErrors.storage);assert.equal(quota.state.citizenReports.length,2);assert.equal(quota.state.citizenReceipt,null);assert.equal(quota.state.citizenDraft.title,'فضای مرورگر پر است');
+const invalid=await boot({[prefix+'citizen-reports']:'{broken',[prefix+'citizen-draft']:JSON.stringify({title:'پیش‌نویس سالم',images:[{url:'javascript:alert(1)'},{url:'https://example.com/photo.jpg'}]})});
+invalid.state.openCitizenForm();await tick();assert.equal(invalid.state.citizenReports.length,0);assert.equal(invalid.state.citizenDraft.images.length,0);assert.equal(invalid.state.citizenDraft.title,'پیش‌نویس سالم');
+pass('Blocked/full/corrupt public storage preserves text and photos, retains prior reports and never shows false success.');
+
+for (const instance of allContexts) {
  assert.deepEqual(instance.errors,[],'Alpine/DOM runtime errors');instance.dom.window.close();
 }
 const localPaths = Array.from(html.matchAll(/(?:src|href)="(\.\/assets\/[^"?]+)(?:\?[^\"]*)?"/g),m=>m[1]);
@@ -292,4 +387,4 @@ for(const file of new Set(localPaths))assert.ok((await stat(path.join('dist',fil
 const styles=await readFile('dist/assets/styles.css','utf8');
 assert.match(styles,/tailwindcss v4/);assert.match(styles,/prefers-reduced-motion/);assert.match(styles,/max-width:600px/);
 pass('No Alpine runtime errors; all referenced local assets and responsive/reduced-motion CSS are built.');
-console.log(`Completed ${checks} integration checks. Browser visual QA remains unverified.`);
+console.log('Completed ' + checks + ' integration checks. Image decoding is mocked in this DOM suite; browser verification is separate.');

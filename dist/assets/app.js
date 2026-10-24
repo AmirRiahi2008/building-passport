@@ -107,6 +107,7 @@
   }
 
   window.buildingPortal = () => ({
+    ...window.buildingCitizenReports(PREFIX),
     view: 'public', modal: '', activeSection: 'building', team, labs, letters,
     teamGroups: [{ id:'all',label:'همه عوامل' },{ id:'design',label:'طراحی' },{ id:'supervision',label:'نظارت' },{ id:'execution',label:'اجرا' },{ id:'specialists',label:'خدمات تخصصی' }],
     teamGroup: 'all', teamSearch: '', controlTab: 'reports', reportFilter: 'all', reportSearch: '',
@@ -119,6 +120,7 @@
       this.phone = normalizePhone(readStore('session', ''));
       this.loadReports();
       this.loadDraft();
+      this.initCitizenReports();
       this.$watch('teamGroup', () => this.$nextTick(() => animateCards()));
       this.$watch('teamSearch', () => this.$nextTick(() => animateCards()));
       this.$watch('reportFilter', () => this.$nextTick(hydrateIcons));
@@ -131,7 +133,7 @@
             if (this.view !== 'public') return;
             entries.forEach(entry => { if (entry.isIntersecting) this.activeSection = entry.target.id; });
           }, { rootMargin: '-15% 0px -65% 0px', threshold: 0 });
-          ['building','team','location'].forEach(id => observer.observe(document.getElementById(id)));
+          ['building','team','location','citizen'].forEach(id => observer.observe(document.getElementById(id)));
         }
       });
       window.addEventListener('storage', event => { if (event.key === PREFIX + 'reports') this.loadReports(); });
@@ -162,7 +164,8 @@
     setControlTab(tab) { this.controlTab = tab; this.$nextTick(hydrateIcons); },
     focusControlTab(tab) { this.setControlTab(tab); this.$nextTick(() => document.getElementById(tab + '-tab')?.focus()); },
     cycleControlTab(direction) { const tabs = ['reports','labs','letters']; this.focusControlTab(tabs[(tabs.indexOf(this.controlTab) + direction + tabs.length) % tabs.length]); },
-    closeModal() { if (this.submitting) return; if (this.modal === 'report') { clearTimeout(draftTimer); this.saveDraft(); } if (this.modal === 'map') { expandedMap?.destroy(); expandedMap = null; this.mapConnection = mapInstance?.status || 'unavailable'; } this.modal = ''; },
+    closeModal() { if (this.submitting || this.citizenSubmitting) return; this.closeCitizenState(); if (this.modal === 'report') { clearTimeout(draftTimer); this.saveDraft(); } if (this.modal === 'map') { expandedMap?.destroy(); expandedMap = null; this.mapConnection = mapInstance?.status || 'unavailable'; } this.modal = ''; },
+    closeTop() { if (this.citizenPhotoPreview) this.citizenPhotoPreview = null; else this.closeModal(); },
 
     loadDraft() { this.draft = this.phone ? validDraft(readStore('draft:' + this.phone, null)) : blankDraft(); this.hasDraft = !!(this.draft.title || this.draft.body); this.draftState = this.hasDraft ? 'پیش‌نویس قبلی بازیابی شد' : ''; },
     openReportForm() { if (!this.phone) { this.enterControl(); return; } this.loadDraft(); this.formErrors = {}; this.submitting = false; this.modal = 'report'; this.$nextTick(() => setTimeout(() => this.$refs.reportTitle?.focus(),60)); },

@@ -27,7 +27,7 @@ for (const name of await readdir(fonts)) {
   }
 }
 execFileSync(process.execPath, [path.join(root, 'node_modules/@tailwindcss/cli/dist/index.mjs'), '-i', 'src/styles.css', '-o', 'dist/assets/styles.css', '--minify'], { stdio: 'inherit' });
-for (const file of ['index.html', 'assets/app.js', 'assets/project-map.js', 'assets/building.svg', 'assets/logo.png']) {
+for (const file of ['index.html', 'assets/app.js', 'assets/citizen-reports.js', 'assets/project-map.js', 'assets/building.svg', 'assets/logo.png']) {
   await stat(path.join(root, 'dist', file));
 }
 console.log('Static site built. Fonts and all JavaScript libraries are local.');
